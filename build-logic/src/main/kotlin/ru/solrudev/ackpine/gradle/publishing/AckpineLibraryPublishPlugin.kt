@@ -62,7 +62,11 @@ public class AckpineLibraryPublishPlugin : Plugin<Project> {
 			)
 		)
 		publishToMavenCentral()
-		signAllPublications()
+		// Signing is required for Maven Central, but not for local/internal builds: pass
+		// -Packpine.publishing.sign=false to publish without a PGP key.
+		if (providers.gradleProperty("ackpine.publishing.sign").orNull != "false") {
+			signAllPublications()
+		}
 
 		pom {
 			name = artifactName
