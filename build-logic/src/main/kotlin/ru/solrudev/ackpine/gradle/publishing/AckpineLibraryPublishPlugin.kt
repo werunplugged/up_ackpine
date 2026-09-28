@@ -21,7 +21,9 @@ import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.MavenPublishBasePlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.repositories.PasswordCredentials
 import org.gradle.api.provider.Provider
+import org.gradle.api.publish.PublishingExtension
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.assign
 import org.gradle.kotlin.dsl.configure
@@ -29,6 +31,8 @@ import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.the
 import ru.solrudev.ackpine.gradle.AckpineLibraryBasePlugin
 import ru.solrudev.ackpine.gradle.AckpineLibraryExtension
+
+private const val UNPLUGGED_REPOSITORY_URL = "https://unplugged.jfrog.io/artifactory/unplugged-libraries"
 
 public class AckpineLibraryPublishPlugin : Plugin<Project> {
 
@@ -44,6 +48,21 @@ public class AckpineLibraryPublishPlugin : Plugin<Project> {
 			artifact.name.convention("")
 			artifact.inceptionYear.convention("2023")
 			configurePublishing(artifact.name, provider { description }, artifact.inceptionYear)
+			configureUnpluggedRepository()
+		}
+	}
+
+	/**
+	 * Adds the werunplugged Artifactory as the `unplugged` repository, published to with
+	 * `publishAllPublicationsToUnpluggedRepository`. Credentials are read from the `unpluggedUsername` and
+	 * `unpluggedPassword` Gradle properties, e.g. from `ORG_GRADLE_PROJECT_unpluggedUsername` and
+	 * `ORG_GRADLE_PROJECT_unpluggedPassword` environment variables, and are only required when publishing.
+	 */
+	private fun Project.configureUnpluggedRepository() = extensions.configure<PublishingExtension> {
+		repositories.maven {
+			name = "unplugged"
+			url = uri(providers.gradleProperty("ackpine.publishing.unplugged.url").getOrElse(UNPLUGGED_REPOSITORY_URL))
+			credentials(PasswordCredentials::class.java)
 		}
 	}
 
