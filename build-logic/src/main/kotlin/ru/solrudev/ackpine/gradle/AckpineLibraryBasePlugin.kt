@@ -72,6 +72,10 @@ public class AckpineLibraryBasePlugin : Plugin<Project> {
 		defaultConfig {
 			testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 			consumerProguardFiles("consumer-rules.pro")
+			// UP Store builds at compileSdk 35; the default (compileSdk 36) would make AGP reject these AARs.
+			aarMetadata {
+				minCompileSdk = 35
+			}
 		}
 
 		buildTypes.named("release") {
