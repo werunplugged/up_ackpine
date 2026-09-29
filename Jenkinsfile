@@ -2,8 +2,9 @@
 //
 // Every branch: ABI check, build and host tests.
 // unplugged-develop only: publishes every library to Artifactory (unplugged-libraries) as
-// ru.solrudev.ackpine:<artifact>:<upstream version>-unplugged.<build number>, e.g. 0.25.4-unplugged.12
-// (ackpine-compress-android is prefixed with its Commons Compress version: 1.28.0-0.25.4-unplugged.12).
+// ru.solrudev.ackpine:<artifact>:<upstream version>-<ackpine.version.qualifier>, e.g. 0.25.4-unplugged.1
+// (ackpine-compress-android is prefixed with its Commons Compress version: 1.28.0-0.25.4-unplugged.1), unless that
+// version is already there. To release, increase ackpine.version.qualifier in gradle.properties.
 //
 // Job setup: a Multibranch Pipeline for werunplugged/up_ackpine on an agent with Docker (the image is built from
 // ci/Dockerfile), with access to the same Artifactory credentials as up_hypatia: artifactory-credentials,
@@ -24,7 +25,7 @@ pipeline {
         JAVA_TOOL_OPTIONS = '-Duser.home=/ci/home'
         // Pinned so that an ANDROID_HOME set on the agent can't override the image's SDK.
         ANDROID_HOME = '/usr/local/android-sdk'
-        GRADLE_ARGS = "--no-daemon --console=plain -Packpine.version.qualifier=unplugged.${env.BUILD_NUMBER} -Packpine.publishing.sign=false -Pkotlin.daemon.jvmargs=-Xmx3g"
+        GRADLE_ARGS = "--no-daemon --console=plain -Packpine.publishing.sign=false -Pkotlin.daemon.jvmargs=-Xmx3g"
     }
     agent {
         dockerfile {
@@ -60,23 +61,34 @@ pipeline {
                     string(credentialsId: 'artifactory-contextUrl', variable: 'ARTIFACTORY_CONTEXT_URL'),
                     string(credentialsId: 'artifactory-repoKey-libs', variable: 'ARTIFACTORY_REPO_KEY')
                 ]) {
-                    // Refuse to overwrite a published version, e.g. after the job was recreated and its build numbers
-                    // restarted: builds that already resolved that version would keep the old artifacts.
+                    // Never overwrite a published version: builds that already resolved it would keep the old artifacts.
+                    // Most pushes don't change the version, so an existing one just means there's nothing to release.
                     sh '''
                         set +x
+                        rm -f published.txt
                         url="${ARTIFACTORY_CONTEXT_URL%/}/$ARTIFACTORY_REPO_KEY"
                         pom="$url/ru/solrudev/ackpine/ackpine-core/$ACKPINE_VERSION/ackpine-core-$ACKPINE_VERSION.pom"
                         status=$(printf 'user = "%s:%s"\\n' "$ORG_GRADLE_PROJECT_unpluggedUsername" "$ORG_GRADLE_PROJECT_unpluggedPassword" \
                             | curl -s -K - -o /dev/null -w '%{http_code}' -I "$pom")
-                        if [ "$status" != 404 ]; then
-                            echo "ackpine-core $ACKPINE_VERSION already exists in Artifactory or can't be checked (HTTP $status)"
-                            exit 1
-                        fi
-                        ./gradlew $GRADLE_ARGS -Packpine.publishing.unplugged.url="$url" publishAllPublicationsToUnpluggedRepository
+                        case "$status" in
+                            404)
+                                ./gradlew $GRADLE_ARGS -Packpine.publishing.unplugged.url="$url" publishAllPublicationsToUnpluggedRepository
+                                touch published.txt
+                                ;;
+                            200)
+                                echo "$ACKPINE_VERSION is already in Artifactory, skipping publishing. To release, increase ackpine.version.qualifier in gradle.properties."
+                                ;;
+                            *)
+                                echo "Can't check whether $ACKPINE_VERSION is in Artifactory (HTTP $status)"
+                                exit 1
+                                ;;
+                        esac
                     '''
                 }
                 script {
-                    currentBuild.description = "Published ${env.ACKPINE_VERSION}"
+                    currentBuild.description = fileExists('published.txt')
+                        ? "Published ${env.ACKPINE_VERSION}"
+                        : "${env.ACKPINE_VERSION} already published"
                 }
             }
         }

@@ -28,7 +28,8 @@ private const val DEFAULT_QUALIFIER = "unplugged.local"
  * Returns a provider of a [Version] object parsed from `version.json` file in root project directory.
  *
  * The version carries the fork's [qualifier][Version.qualifier] from the `ackpine.version.qualifier` Gradle property,
- * `unplugged.local` by default. CI sets it to `unplugged.<build number>`; an empty value leaves the upstream version.
+ * set in `gradle.properties` and increased by hand for every release (`unplugged.1`, `unplugged.2`, ...). It falls back
+ * to `unplugged.local` if the property is missing; an empty value leaves the upstream version.
  */
 public val Project.ackpineVersion: Provider<Version>
 	get() = gradle
