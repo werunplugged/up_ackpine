@@ -39,12 +39,8 @@ pipeline {
                 script {
                     def branch = env.BRANCH_NAME ?: ''
                     def isMainBranch = branch in ['main', 'master']
-                    // TEMPORARY (UNP-9252): lets this branch publish once more, to verify the com.unplugged.ackpine group
-                    // and the all-modules overwrite check, as 0.25.4-unplugged.test.<build>. Remove once verified.
-                    def isTestPublishBranch = branch == 'UNP-9252'
-                    env.CHANNEL = isMainBranch ? "unplugged.${env.BUILD_NUMBER}" :
-                        (isTestPublishBranch ? "unplugged.test.${env.BUILD_NUMBER}" : "unplugged.ci.${env.BUILD_NUMBER}")
-                    env.PUBLISH = (isMainBranch || isTestPublishBranch).toString()
+                    env.CHANNEL = isMainBranch ? "unplugged.${env.BUILD_NUMBER}" : "unplugged.ci.${env.BUILD_NUMBER}"
+                    env.PUBLISH = isMainBranch.toString()
                     env.GRADLE_ARGS = "--no-daemon --console=plain -Packpine.version.channel=${env.CHANNEL} " +
                         '-Packpine.publishing.sign=false -Pkotlin.daemon.jvmargs=-Xmx3g'
                     echo "🌿 Branch: ${branch} | channel: ${env.CHANNEL} | publish: ${env.PUBLISH == 'true' ? 'yes' : 'no, only the main branch publishes'}"
