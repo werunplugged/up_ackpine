@@ -38,7 +38,8 @@ pipeline {
             steps {
                 script {
                     def branch = env.BRANCH_NAME ?: ''
-                    def isMainBranch = branch in ['main', 'master']
+                    // UNP-9252 also publishes, as a regular version, until the PR reaches master.
+                    def isMainBranch = branch in ['main', 'master', 'UNP-9252']
                     env.CHANNEL = isMainBranch ? "unplugged.${env.BUILD_NUMBER}" : "unplugged.ci.${env.BUILD_NUMBER}"
                     env.PUBLISH = isMainBranch.toString()
                     env.GRADLE_ARGS = "--no-daemon --console=plain -Packpine.version.channel=${env.CHANNEL} " +
