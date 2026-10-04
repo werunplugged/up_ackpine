@@ -20,7 +20,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 private val validSuffix = Regex("[a-z0-9]*")
-private val validChannel = Regex("[a-z0-9.]*")
+private val validQualifier = Regex("[a-z0-9.]*")
 
 /**
  * Version of the project, adhering to semantic versioning.
@@ -34,15 +34,15 @@ public data class Version(
 	public val isSnapshot: Boolean,
 
 	/**
-	 * Release channel of the werunplugged fork, e.g. `unplugged.12`. Appended to the version so that the fork's
+	 * Qualifier of the werunplugged fork, e.g. `unplugged.1`. Appended to the version so that the fork's
 	 * artifacts never share a version with upstream's. Not read from `version.json`, and doesn't affect [versionCode].
 	 */
 	@Transient
-	public val channel: String = ""
+	public val qualifier: String = ""
 ) : Comparable<Version> {
 
 	init {
-		require(channel.matches(validChannel)) { "Version channel contains illegal characters: $channel" }
+		require(qualifier.matches(validQualifier)) { "Version qualifier contains illegal characters: $qualifier" }
 	}
 
 	/**
@@ -60,8 +60,8 @@ public data class Version(
 			if (suffix.isNotEmpty()) {
 				append("-$suffix")
 			}
-			if (channel.isNotEmpty()) {
-				append("-$channel")
+			if (qualifier.isNotEmpty()) {
+				append("-$qualifier")
 			}
 			if (isSnapshot) {
 				append("-SNAPSHOT")

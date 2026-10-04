@@ -30,11 +30,11 @@ internal abstract class VersioningService : BuildService<VersioningService.Param
 		val versionJson = parameters.versionFile.get().asFile.readText()
 		json
 			.decodeFromString<Version>(versionJson)
-			.copy(channel = parameters.channel.get())
+			.copy(qualifier = parameters.qualifier.get())
 	}
 
 	internal interface Parameters : BuildServiceParameters {
 		val versionFile: RegularFileProperty
-		val channel: Property<String>
+		val qualifier: Property<String>
 	}
 }

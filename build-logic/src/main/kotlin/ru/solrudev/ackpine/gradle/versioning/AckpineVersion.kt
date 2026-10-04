@@ -21,22 +21,22 @@ import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.assign
 import org.gradle.kotlin.dsl.registerIfAbsent
 
-private const val CHANNEL_PROPERTY = "ackpine.version.channel"
-private const val LOCAL_CHANNEL = "unplugged.local"
+private const val QUALIFIER_PROPERTY = "ackpine.version.qualifier"
+private const val LOCAL_QUALIFIER = "unplugged.local"
 
 /**
  * Returns a provider of a [Version] object parsed from `version.json` file in root project directory.
  *
- * The version carries the fork's release [channel][Version.channel] from the `ackpine.version.channel` Gradle
- * property. It defaults to `unplugged.local`, so that nothing built outside CI can pass for an upstream release; CI
- * sets it from the branch.
+ * The version carries the fork's [qualifier][Version.qualifier] from the `ackpine.version.qualifier` Gradle
+ * property, set in `gradle.properties` and increased by hand for every release (`unplugged.1`, `unplugged.2`, ...).
+ * It falls back to `unplugged.local` if the property is missing, so nothing can pass for an upstream release.
  */
 public val Project.ackpineVersion: Provider<Version>
 	get() = gradle
 		.sharedServices
 		.registerIfAbsent("versioning", VersioningService::class) {
 			parameters.versionFile = layout.settingsDirectory.file("version.json")
-			parameters.channel = providers.gradleProperty(CHANNEL_PROPERTY).orElse(LOCAL_CHANNEL)
+			parameters.qualifier = providers.gradleProperty(QUALIFIER_PROPERTY).orElse(LOCAL_QUALIFIER)
 		}
 		.map { service ->
 			service.version
