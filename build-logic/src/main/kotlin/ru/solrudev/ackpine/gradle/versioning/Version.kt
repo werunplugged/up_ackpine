@@ -17,8 +17,10 @@
 package ru.solrudev.ackpine.gradle.versioning
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 private val validSuffix = Regex("[a-z0-9]*")
+private val validQualifier = Regex("[a-z0-9.]*")
 
 /**
  * Version of the project, adhering to semantic versioning.
@@ -29,8 +31,19 @@ public data class Version(
 	public val minorVersion: Int,
 	public val patchVersion: Int,
 	public val suffix: String,
-	public val isSnapshot: Boolean
+	public val isSnapshot: Boolean,
+
+	/**
+	 * Qualifier of the werunplugged fork, e.g. `unplugged.1`. Appended to the version so that the fork's
+	 * artifacts never share a version with upstream's. Not read from `version.json`, and doesn't affect [versionCode].
+	 */
+	@Transient
+	public val qualifier: String = ""
 ) : Comparable<Version> {
+
+	init {
+		require(qualifier.matches(validQualifier)) { "Version qualifier contains illegal characters: $qualifier" }
+	}
 
 	/**
 	 * Version code computed from semantic version number.
@@ -46,6 +59,9 @@ public data class Version(
 			append("$majorVersion.$minorVersion.$patchVersion")
 			if (suffix.isNotEmpty()) {
 				append("-$suffix")
+			}
+			if (qualifier.isNotEmpty()) {
+				append("-$qualifier")
 			}
 			if (isSnapshot) {
 				append("-SNAPSHOT")
